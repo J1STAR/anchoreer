@@ -36,7 +36,7 @@ export default function Modal(props: Props) {
   useEffect(() => {
     const close = (e: any) => {
       if (open && (!autoRef.current || !autoRef.current.contains(e.target))) {
-        maintain(false);
+        if (maintain !== undefined) maintain(false);
       }
     };
 

@@ -23,12 +23,12 @@ export default function Calendar() {
   const [month, setMonth] = useState(time.getMonth() + 1);
   const [day, setDay] = useState<Array<string>>([]);
 
-  const [opener, setOpener] = useState(false);
-  const [companyList, setCompanyList] = useState<Array<DataInfo>>([]);
-  const [selectedCompany, setSelectedCompany] = useState<DataInfo>();
+  const [opener, setOpener] = useState(false); // Modal Opener
+  const [companyList, setCompanyList] = useState<Array<DataInfo>>([]); // 기업 정보 리스트
+  const [selectedCompany, setSelectedCompany] = useState<DataInfo>(); // 유저가 클릭한 기업의 정보
 
-  const [startArr, setStartArr] = useState<Array<any>>([]);
-  const [endArr, setEndArr] = useState<Array<any>>([]);
+  const [startArr, setStartArr] = useState<Array<any>>([]); // 달력 날짜에 따라 시작일, 기업 ID가 저장된 배열
+  const [endArr, setEndArr] = useState<Array<any>>([]); // 달력 날짜에 따라 종료일, 기업 ID가 저장된 배열
 
   const changeNav = (direction: number) => {
     if (month + direction === 13) {
@@ -46,8 +46,8 @@ export default function Calendar() {
     let monthLength = new Date(yyyy, mm, 0).getDate(); // 이번 달 길이
     let monthStart = new Date(yyyy, mm - 1).getDay(); // 이번 달 시작 요일
     let lastday = new Date(yyyy, mm - 1, 0).getDate(); // 지난 달 말일
-    let firstday = 1; // 이번 달 시작일
-    day.splice(0); // 달력 초기화
+    let firstday = 1;
+    day.splice(0);
 
     // 달력에 포함된 지난 달 채우기
     for (let j = 0; j < monthStart; j++) {
@@ -69,8 +69,9 @@ export default function Calendar() {
     setDay([...day]);
   };
 
-  const calculateLength = (mm: number, day: string) => {
-    let tempMonth = mm;
+  /* 올해 달력의 시작일로부터 입력된 날짜까지의 거리 계산 */
+  const calculateLength = (day: string) => {
+    let tempMonth = month;
     let tempDay = 1;
     if (day.includes("/")) {
       tempMonth = Number(day.split("/")[0]);
@@ -97,22 +98,15 @@ export default function Calendar() {
     setOpener(close);
   };
 
-  const init = async () => {
-    await axios.get("https://frontend-assignments.s3.ap-northeast-2.amazonaws.com/job_postings.json").then(res => {
-      if (res) setCompanyList(res.data as Array<DataInfo>);
-    });
-  };
-
   /* 
-    회사 정보를 받아온 후 시작일과 종료일에 따라 startArr, endArr에 name과 id 저장
-    올해 달력에서 시작일, 종료일이 며칠 떨어져있는지
+    회사 정보를 받아온 후 시작일과 종료일에 따라 startArr, endArr에 { name, id } 저장
+    startArr, endArr의 index는 올해 달력의 시작에서 며칠 떨어져 있는지
   */
   const saveSchedule = async () => {
     let lastyearDay = new Date(year, 0).getDay();
     let thisyearDay = 0;
-    let nextyearDay = 7 - new Date(year + 1, 0).getDay();
-
     for (let a = 0; a < 12; a++) thisyearDay += new Date(year, a, 0).getDate();
+    let nextyearDay = 7 - new Date(year + 1, 0).getDay();
 
     startArr.splice(0);
     endArr.splice(0);
@@ -131,34 +125,38 @@ export default function Calendar() {
       for (let j = 0; j < Number(start.split("-")[1]) - 1; j++) startLength += new Date(Number(start.split("-")[0]), j, 0).getDate();
       startLength += Number(start.split("-")[2]);
 
-      for (let k = 0; k < Number(end.split("-")[1]) - 1; k++) endLength += new Date(Number(end.split("-")[0]), k, 0).getDate();
-      endLength += Number(end.split("-")[2]);
-
       startArr[startLength].push({ name: companyList[i].name, id: companyList[i].id });
-      endArr[endLength].push({ name: companyList[i].name, id: companyList[i].id });
-
       startArr[startLength].sort(function (a: MiniInfo, b: MiniInfo) {
         if (a.name < b.name) return -1;
         if (a.name > b.name) return 1;
         return 0;
       });
+      setStartArr([...startArr]);
+
+      for (let k = 0; k < Number(end.split("-")[1]) - 1; k++) endLength += new Date(Number(end.split("-")[0]), k, 0).getDate();
+      endLength += Number(end.split("-")[2]);
+
+      endArr[endLength].push({ name: companyList[i].name, id: companyList[i].id });
       endArr[endLength].sort(function (a: MiniInfo, b: MiniInfo) {
         if (a.name < b.name) return -1;
         if (a.name > b.name) return 1;
         return 0;
       });
-      setStartArr([...startArr]);
       setEndArr([...endArr]);
     }
   };
 
-  /* 달력 이동시 날짜에 맞게 재생성 */
+  const init = async () => {
+    await axios.get("https://frontend-assignments.s3.ap-northeast-2.amazonaws.com/job_postings.json").then(res => {
+      if (res) setCompanyList(res.data as Array<DataInfo>);
+    });
+  };
+
   useEffect(() => {
     makeCalendar(year, month);
     // eslint-disable-next-line
   }, [month]);
 
-  /* 달력에 포함된 기업 리스트 생성 */
   useEffect(() => {
     saveSchedule();
     // eslint-disable-next-line
@@ -193,7 +191,7 @@ export default function Calendar() {
       <div>
         {week.map((name: string) => {
           return (
-            <div className='week' key={name}>
+            <div className='calendar-week' key={name}>
               {name}
             </div>
           );
@@ -203,7 +201,7 @@ export default function Calendar() {
       <div className='calendar-content'>
         {day.length > 0 &&
           day.map((day: string, idx: number) => {
-            let index = calculateLength(month, day);
+            let index = calculateLength(day);
             return (
               <div key={idx} className='days'>
                 <div className='info'>{day}</div>

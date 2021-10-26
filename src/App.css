@@ -28,7 +28,7 @@
   margin: 0 8px;
 }
 
-.week {
+.calendar-week {
   display: inline-block;
   width: calc(100% / 7);
   border-left: 1px solid #f0f0f0;
@@ -108,7 +108,9 @@
   width: 100vw;
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.3);
-  overflow: scroll;
+  overflow-y: scroll;
+  padding: 0 20px;
+  box-sizing: border-box;
 }
 
 .modal {
